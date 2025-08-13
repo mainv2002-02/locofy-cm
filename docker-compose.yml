@@ -1,18 +1,4 @@
 services:
-  #    nginx:
-  #        build:
-  #          context: ./nginx/
-  #          dockerfile: ./Dockerfile
-  #        container_name: nginx
-  #        volumes:
-  #            - .:/var/www:rw
-  #            - ./logs/nginx:/var/log/nginx/:rw
-  #        ports:
-  #            - "80:80"
-  #            - "443:443"
-  #        restart: always
-  #        depends_on:
-  #            - api
   frontend:
     env_file:
       - frontend/.env
