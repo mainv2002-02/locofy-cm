@@ -1,0 +1,54 @@
+services:
+  #    nginx:
+  #        build:
+  #          context: ./nginx/
+  #          dockerfile: ./Dockerfile
+  #        container_name: nginx
+  #        volumes:
+  #            - .:/var/www:rw
+  #            - ./logs/nginx:/var/log/nginx/:rw
+  #        ports:
+  #            - "80:80"
+  #            - "443:443"
+  #        restart: always
+  #        depends_on:
+  #            - api
+  frontend:
+    env_file:
+      - frontend/.env
+    build:
+      context: ./frontend/
+      dockerfile: ./Dockerfile
+#    restart: always
+    ports:
+      - "127.0.0.1:3006:3006"
+    expose:
+      - 3006
+  api:
+    build:
+      context: ./api/
+      dockerfile: ./Dockerfile
+    container_name: api
+    environment:
+      MONGO_URI: "mongodb://mongodb:27017/locofy-cm"
+    restart: always
+    ports:
+      - "127.0.0.1:8000:8000"
+    expose:
+      - 8000
+    depends_on:
+      - mongodb
+  mongodb:
+    build:
+      context: ./mongodb/
+      dockerfile: ./Dockerfile
+    container_name: mongodb
+    volumes:
+      - mongodb:/mongodb/db
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: locofyuser
+      MONGO_INITDB_ROOT_PASSWORD: locofypass
+volumes:
+  mongodb:

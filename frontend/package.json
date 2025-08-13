@@ -1,0 +1,11 @@
+{
+  "main": "App.ts",
+  "scripts": {
+    "dev": "nodemon",
+    "start": "node build/App.js",
+    "build": "tsc --project ./"
+  },
+  "dependencies": {
+    "typescript": "^5.9.2"
+  }
+}
