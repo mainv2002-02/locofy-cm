@@ -5,6 +5,9 @@ services:
     build:
       context: ./frontend/
       dockerfile: ./Dockerfile
+    volumes:
+      - ./frontend/:/app
+      - /app/node_modules
 #    restart: always
     ports:
       - "127.0.0.1:3006:3006"
@@ -17,6 +20,8 @@ services:
     container_name: api
     environment:
       MONGO_URI: "mongodb://mongodb:27017/locofy-cm"
+    volumes:
+      - ./api/:/app
     restart: always
     ports:
       - "127.0.0.1:8000:8000"
@@ -30,7 +35,7 @@ services:
       dockerfile: ./Dockerfile
     container_name: mongodb
     volumes:
-      - mongodb:/mongodb/db
+      - mongodb:/data/db
     ports:
       - "27017:27017"
 volumes:
