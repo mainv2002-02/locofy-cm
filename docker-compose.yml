@@ -47,8 +47,5 @@ services:
       - mongodb:/mongodb/db
     ports:
       - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: locofyuser
-      MONGO_INITDB_ROOT_PASSWORD: locofypass
 volumes:
   mongodb:
