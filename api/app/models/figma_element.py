@@ -8,4 +8,5 @@ class FigmaElement(BaseModel):
     type: str
     properties: FigmaProperties
     componentId: Optional[str] = None # Only for INSTANCE type
-    description: Optional[str] = None # Only for COMPONENT type
+    description: Optional[str] = None
+    file_id: str

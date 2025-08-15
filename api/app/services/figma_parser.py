@@ -1,8 +1,10 @@
 from typing import List
 import requests
 from fastapi import HTTPException
-from app.models import FigmaProperties, FigmaElement, FigmaColor, FigmaFontStyle
+from app.models import FigmaProperties, FigmaElement, FigmaColor, FigmaFontStyle, FigmaFile
 import re
+from app.services.database import get_figma_elements_collection, get_figma_files_collection
+from datetime import datetime
 
 def extract_properties(node):
     parsed_fills = []
@@ -50,6 +52,35 @@ def parse_figma_file_data(figma_url: str, figma_token: str) -> List[FigmaElement
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=400, detail=f"Figma API request failed: {e}")
 
+    # Get the document node ID for image generation
+    document_node_id = figma_data["document"]["id"]
+    
+    # Generate image URL for the document (or a specific page/frame)
+    image_url = None
+    try:
+        image_response = requests.get(
+            f"https://api.figma.com/v1/images/{file_id}/nodes?ids={document_node_id}&scale=1&format=png",
+            headers=headers
+        )
+        image_response.raise_for_status()
+        image_data = image_response.json()
+        if "images" in image_data and document_node_id in image_data["images"]:
+            image_url = image_data["images"][document_node_id]
+    except requests.exceptions.RequestException as e:
+        print(f"Warning: Could not generate image for Figma file: {e}") # Log warning, don't fail parsing
+
+    # Create FigmaFile instance and save it
+    figma_file_name = figma_data["name"] # Get file name from Figma API response
+    figma_file_obj = FigmaFile(
+        id=file_id,
+        name=figma_file_name,
+        image_url=image_url,
+        upload_timestamp=datetime.utcnow()
+    )
+    figma_files_collection = get_figma_files_collection()
+    figma_files_collection.insert_one(figma_file_obj.dict())
+
+
     extracted_data = []
 
     def traverse_nodes(nodes):
@@ -58,10 +89,12 @@ def parse_figma_file_data(figma_url: str, figma_token: str) -> List[FigmaElement
                 id=node.get("id"),
                 name=node.get("name"),
                 type=node.get("type", "UNKNOWN"),
-                properties=extract_properties(node)
+                properties=extract_properties(node),
+                file_id=file_id # Assign file_id here
             )
             if node.get("type") == "INSTANCE":
                 element_data.componentId = node.get("componentId")
+            
             extracted_data.append(element_data)
 
             if "children" in node:
@@ -78,7 +111,8 @@ def parse_figma_file_data(figma_url: str, figma_token: str) -> List[FigmaElement
                     name=component_data.get("name"),
                     type=component_data.get("type", "UNKNOWN"),
                     description=component_data.get("description"),
-                    properties=extract_properties(component_data)
+                    properties=extract_properties(component_data),
+                    file_id=file_id # Assign file_id here
                 )
                 extracted_data.append(extracted_component)
     
