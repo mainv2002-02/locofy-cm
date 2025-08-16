@@ -10,7 +10,7 @@ services:
       - /app/node_modules
 #    restart: always
     ports:
-      - "127.0.0.1:3006:3006"
+      - "127.0.0.1:3006:5173"
     expose:
       - 3006
   api:
