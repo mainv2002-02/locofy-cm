@@ -54,20 +54,30 @@ def parse_figma_file_data(figma_url: str, figma_token: str) -> List[FigmaElement
 
     # Get the document node ID for image generation
     document_node_id = figma_data["document"]["id"]
-    
-    # Generate image URL for the document (or a specific page/frame)
+
+    # Generate image URL for the document (or a specific page/frame) by polling
+    import time
     image_url = None
-    try:
-        image_response = requests.get(
-            f"https://api.figma.com/v1/images/{file_id}/nodes?ids={document_node_id}&scale=1&format=png",
-            headers=headers
-        )
-        image_response.raise_for_status()
-        image_data = image_response.json()
-        if "images" in image_data and document_node_id in image_data["images"]:
-            image_url = image_data["images"][document_node_id]
-    except requests.exceptions.RequestException as e:
-        print(f"Warning: Could not generate image for Figma file: {e}") # Log warning, don't fail parsing
+    image_url_endpoint = f"https://api.figma.com/v1/images/{file_id}?ids={document_node_id}&scale=1&format=png"
+    
+    for i in range(10): # Poll up to 10 times
+        try:
+            image_response = requests.get(image_url_endpoint, headers=headers)
+            image_response.raise_for_status()
+            image_data = image_response.json()
+            if image_data.get("images") and image_data["images"].get(document_node_id):
+                image_url = image_data["images"][document_node_id]
+                print(f"Image URL retrieved successfully for file {file_id}.")
+                break  # Exit loop if URL is found
+            else:
+                print(f"Image not ready for file {file_id}, polling again in 2 seconds... (Attempt {i+1}/10)")
+                time.sleep(2)
+        except requests.exceptions.RequestException as e:
+            print(f"Warning: Request to get image for Figma file failed: {e}")
+            break  # Stop polling on request error
+
+    if not image_url:
+        print(f"Warning: Could not retrieve image URL for file {file_id} after 10 attempts.")
 
     # Create FigmaFile instance and save it
     figma_file_name = figma_data["name"] # Get file name from Figma API response
